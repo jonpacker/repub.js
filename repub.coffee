@@ -19,6 +19,20 @@
 #											'sel': function(window) { return document.querySelector('#test').textContent; } },
 #		'array_of_items': [{ 'page': page_or_page_id,
 #												 'sel': selector_to_items }] //a function here would take window AND the current index
-#	}
+# }
 #
+
+# Global page register so pages can be assigned to strings to be referenced in Types
+pages = {}
+
+class Page
+	constructor: (@requestOptions) ->
+
+class Type
+	constructor: ->
+
+addPage = (pageName, page) ->
+	pages[pageName] = page
+
+module.exports = Page: Page, Type: Type, addPage: addPage, pages: pages
 
