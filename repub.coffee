@@ -22,17 +22,21 @@
 # }
 #
 
-# Global page register so pages can be assigned to strings to be referenced in Types
-pages = {}
+
+uniqueId = do ->
+	count = 0
+	-> "_repub_page_#{count++}"
 
 class Page
 	constructor: (@requestOptions) ->
+		Page.pages[this._internalId = uniqueId()] = this
+
+Page.pages = {}
+Page.addPage = (pageName, page) ->
+	Page.pages[pageName] = page
 
 class Type
-	constructor: ->
+	constructor: (@structure, @scope) ->
 
-addPage = (pageName, page) ->
-	pages[pageName] = page
-
-module.exports = Page: Page, Type: Type, addPage: addPage, pages: pages
+module.exports = Page: Page, Type: Type, addPage: Page.addPage, pages: Page.pages
 
