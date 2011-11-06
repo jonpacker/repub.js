@@ -1,25 +1,8 @@
 
 # 
-# Repub is a scraping and republishing tool for Node.JS. It allows you to transform the textual result of CSS selectors
-# on an arbitrary page into a data format. 
-#
-# First you'll need to create your pages. You can do that by using new repub.Page(<request object>). You will then pass
-# these objects in your types so that repub knows which page to request data from. Alternatively, you can use
-# repub.addPage(<name>, <page>) to assign a page to a string, which you can then use in your Type creation in place of
-# the Page object itself.
-#
-# To create a type, make a new repub.Type(<structure>). The structure of a type should be similar to that following this
-# paragraph. You can either use a selector to find some text verbatim (.textContent will be used to find the value, and 
-# it will be trimmed first), or you can use a function which is passed the window object to do it yourself. 
-#
-#	{
-#		'item': { 'page': page_or_page_id
-#							'sel': selector_to_item },
-#		'another_item': { 'page': page_or_page_id
-#											'sel': function(window) { return document.querySelector('#test').textContent; } },
-#		'array_of_items': [{ 'page': page_or_page_id,
-#												 'sel': selector_to_items }] //a function here would take window AND the current index
-# }
+# Repub is a scraping and republishing tool for Node.JS. It allows you to 
+# transform the textual result of CSS selectors on an arbitrary page into a data
+# format. 
 #
 
 uniqueId = do ->
@@ -45,8 +28,8 @@ PageCache.maxAge = 10 #default maxAge 10 seconds.
 # Add something to the cache - id to retrieve it by, and the data to store
 PageCache.set = (id, data) -> PageCache.cache[id] = new PageCache id, data
 
-# Get something from the cache. If nothing exists in the cache by the given id, or the item has expired,
-# nothing is returned
+# Get something from the cache. If nothing exists in the cache by the given 
+# id, or the item has expired, nothing is returned
 PageCache.get = (id) -> PageCache.cache[id].data if PageCache.exists id
 	
 # Check if something exists in the cache.
@@ -66,8 +49,44 @@ PageCache.expire = (id) -> delete PageCache.cache[id]
 class Type
 	constructor: (@structure, @scope) ->
 
-class TypeRequest
-	constructor: (@page, @type) ->
+Type.typeKeyword = '_type'
+Type.scopeKeyword = '_scope'
 
-module.exports = Page: Page, Type: Type, PageCache: PageCache, addPage: Page.addPage, pages: Page.pages
+class TypeRequest
+	constructor: (@type, @page, @callback) ->
+		@traverse @type
+	
+	# Recursive - takes a section of a type, decides what to do with it. If it is
+	# a type itself, this will move on to readType which sets context. 
+	traverse: (type, out = {}) ->
+		# Check if this is a type - if so, we switch to that context and it will
+		# continue the recursion by itself.
+		return @readType type if @isType type
+
+		# If this is a string then we've hit an endpoint and it's time to actually
+		# fetch data from the doc. (Null is also valid).
+		return @parseNode type if typeof type is 'string' or not type
+
+		# Otherwise, we've got an object to iterate through.
+		for key, value of type
+			out[key] = @traverse value, out
+
+		out
+
+	# Returns true if 'obj' is a 'type'. This is qualified by it being truthy, and
+	# owning both the 'Type.scopeKeyword' and 'Type.typeKeyword' keywords. By
+	# default those are set to '_scope' and '_type' - but can be changed. 
+	isType: (obj) ->
+		obj and Type.scopeKeyword of obj and Type.typeKeyword of obj
+
+		
+
+request = (type, page, callback = ->) -> new TypeRequest type, page, callback
+
+module.exports =
+	Page: Page,
+	Type: Type,
+	PageCache: PageCache,
+	addPage: Page.addPage,
+	pages: Page.pages
 

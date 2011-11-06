@@ -1,5 +1,5 @@
 (function() {
-  var Page, PageCache, Type, TypeRequest, uniqueId;
+  var Page, PageCache, Type, TypeRequest, request, uniqueId;
   uniqueId = (function() {
     var count;
     count = 0;
@@ -61,13 +61,43 @@
     }
     return Type;
   })();
+  Type.typeKeyword = '_type';
+  Type.scopeKeyword = '_scope';
   TypeRequest = (function() {
-    function TypeRequest(page, type) {
-      this.page = page;
+    function TypeRequest(type, page, callback) {
       this.type = type;
+      this.page = page;
+      this.callback = callback;
+      this.traverse(this.type);
     }
+    TypeRequest.prototype.traverse = function(type, out) {
+      var key, value;
+      if (out == null) {
+        out = {};
+      }
+      if (this.isType(type)) {
+        return this.readType(type);
+      }
+      if (typeof type === 'string' || !type) {
+        return this.parseNode(type);
+      }
+      for (key in type) {
+        value = type[key];
+        out[key] = this.traverse(value, out);
+      }
+      return out;
+    };
+    TypeRequest.prototype.isType = function(obj) {
+      return obj && Type.scopeKeyword in obj && Type.typeKeyword in obj;
+    };
     return TypeRequest;
   })();
+  request = function(type, page, callback) {
+    if (callback == null) {
+      callback = function() {};
+    }
+    return new TypeRequest(type, page, callback);
+  };
   module.exports = {
     Page: Page,
     Type: Type,
