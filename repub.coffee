@@ -35,8 +35,37 @@ Page.pages = {}
 Page.addPage = (pageName, page) ->
 	Page.pages[pageName] = page
 
+class PageCache
+	constructor: (@id, @data) ->
+		@timeCreated = Date.now()
+	ageInSeconds: -> (Date.now() - @timeCreated) / 1000
+
+PageCache.cache = {}
+PageCache.maxAge = 10 #default maxAge 10 seconds.
+
+# Add something to the cache - id to retrieve it by, and the data to store
+PageCache.set = (id, data) -> PageCache.cache[id] = new PageCache id, data
+
+# Get something from the cache. If nothing exists in the cache by the given id, or the item has expired,
+# nothing is returned
+PageCache.get = (id) -> PageCache.cache[id].data if PageCache.exists id
+	
+# Check if something exists in the cache.
+PageCache.exists = (id) ->
+	return false if not PageCache.cache.hasOwnProperty id
+
+	cache = PageCache.cache[id]
+	if cache.ageInSeconds() > PageCache.maxAge
+		PageCache.expire id
+		return false
+	return true
+
+
+# Expire something in the cache
+PageCache.expire = (id) -> delete PageCache.cache[id]
+
 class Type
 	constructor: (@structure, @scope) ->
 
-module.exports = Page: Page, Type: Type, addPage: Page.addPage, pages: Page.pages
+module.exports = Page: Page, Type: Type, PageCache: PageCache, addPage: Page.addPage, pages: Page.pages
 
