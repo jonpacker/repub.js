@@ -1,0 +1,17 @@
+{ 
+	'scope': '#scopeContainer .resultItem',
+	'type': {
+		'title': '.resultTitle',
+		'items': {
+			'scope': '.subItems li',
+			'type': null
+		},
+		'possible_items': {
+			'scope': '.sometimesExistingSubItems li',
+			'type': {
+				'title': 'span:nth-child(1)',
+				'detail': 'span:nth-child(2)'
+			}
+		}
+	}
+}

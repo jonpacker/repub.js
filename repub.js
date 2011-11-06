@@ -1,5 +1,5 @@
 (function() {
-  var Page, PageCache, Type, uniqueId;
+  var Page, PageCache, Type, TypeRequest, uniqueId;
   uniqueId = (function() {
     var count;
     count = 0;
@@ -60,6 +60,13 @@
       this.scope = scope;
     }
     return Type;
+  })();
+  TypeRequest = (function() {
+    function TypeRequest(page, type) {
+      this.page = page;
+      this.type = type;
+    }
+    return TypeRequest;
   })();
   module.exports = {
     Page: Page,
