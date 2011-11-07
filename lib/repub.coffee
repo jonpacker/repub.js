@@ -54,18 +54,37 @@ Type.scopeKeyword = '_scope'
 
 class TypeRequest
 	constructor: (@type, @page, @callback) ->
-		@traverse @type
+		@page.request (err, window) ->
+			@callback err, null if not err?
+			@traverse @type, window.document
 	
+	readType: (type, element, out) ->
+		nodes = element.querySelectorAll type[Type.scopeKeyword]
+		return [] if nodes.length is 0
+
+		subtype = type[Type.typeKeyword]
+		results = []
+		for (i = 0; i < nodes.length; ++i) #refactor this
+			results.push @traverse subtype, nodes[i]
+
+		return results
+
+	parseNode: (selector, element) ->
+		# If !selector, return all text content of the current element
+		return element?.textContent if not selector?
+		node = element.querySelector selector
+		return node?.textContent?.trim()
+
 	# Recursive - takes a section of a type, decides what to do with it. If it is
 	# a type itself, this will move on to readType which sets context. 
-	traverse: (type, out = {}) ->
+	traverse: (type, element) ->
 		# Check if this is a type - if so, we switch to that context and it will
 		# continue the recursion by itself.
-		return @readType type if @isType type
+		return @readType type, element if @isType type
 
 		# If this is a string then we've hit an endpoint and it's time to actually
 		# fetch data from the doc. (Null is also valid).
-		return @parseNode type if typeof type is 'string' or not type
+		return @parseNode type, element if typeof type is 'string' or not type
 
 		# Otherwise, we've got an object to iterate through.
 		for key, value of type

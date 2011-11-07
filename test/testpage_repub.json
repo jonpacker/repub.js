@@ -1,14 +1,14 @@
 { 
-	'scope': '#scopeContainer .resultItem',
-	'type': {
+	'_scope': '#scopeContainer .resultItem',
+	'_type': {
 		'title': '.resultTitle',
 		'items': {
-			'scope': '.subItems li',
-			'type': null
+			'_scope': '.subItems li',
+			'_type': null
 		},
 		'possible_items': {
-			'scope': '.sometimesExistingSubItems li',
-			'type': {
+			'_scope': '.sometimesExistingSubItems li',
+			'_type': {
 				'title': 'span:nth-child(1)',
 				'detail': 'span:nth-child(2)'
 			}
