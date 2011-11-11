@@ -1,7 +1,8 @@
 repub = require '../repub.js'
 fs = require 'fs'
 
-testPageFile = './testpage.html'
+testPageFile = './test/testpage.html'
+testTypeFile = './test/testpage_repub.json'
 
 # Mock a page request by creating a dummy page and jamming our own stuff in the
 # cache with the ID of the dummy. May also look at spoofing the cache time later
@@ -25,17 +26,18 @@ loadData = (assert) ->
 
 	data: data, type: type, page: page, type: type
 
+
 tests =
 	'TypeRequest Basic Parsing': (beforeExit, assert) ->
 		data = loadData assert
 		
-		repub.request(type, page, (err, data) ->
+		repub.request data.type, data.page, (err, data) ->
 			assert.isNull err, 'Request error was not null'
 			assert.length data, 2
 
-	'TypeRequest Parsing a Page (exact)': (beforeExit, assert) ->
+ 'TypeRequest Parsing a Page (exact)': (beforeExit, assert) ->
 		data = loadData assert
-		repub.request(type, page, (err, data) ->
+		repub.request data.type, data.page, (err, data) ->
 			assert.isNull err, 'Request error was not null'
 			assert.length data, 2
 			
@@ -45,11 +47,10 @@ tests =
 					possible_items: [{ title: 'seSubTitle1', detail: 'seSubDetail1' },
 													 { title: 'seSubTitle2', detail: 'seSubDetail2' }]
 				}, {
-					title: 'testTitle2'
+					title: 'testTitle2',
 					items: ['subTestSubItem1', 'subTestSubItem2', 'subTestSubItem3'],
 					possible_items: null
-				}
-			]
+				}]
 
 			assert.eql data, expectedStructure
 		

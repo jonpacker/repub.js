@@ -5,17 +5,35 @@
 # format. 
 #
 
+http = require 'http'
+jsdom = require 'jsdom'
+
 uniqueId = do ->
 	count = 0
 	-> "_repub_page_#{count++}"
 
 class Page
 	constructor: (@requestOptions) ->
-		Page.pages[this._internalId = uniqueId()] = this
+		Page.pages[@_internalId = uniqueId()] = this
+	request: (callback) ->
+		return PageCache.get @_internalId if PageCache.exists @_internalId
+
+		http.request @requestOptions, ->
+			data = ''
+			res.setEncoding 'binary'
+			res.on 'data', (chunk) -> data += chunk
+			res.on 'end', -> jsdom.env
+				html: data
+				done: (err, window) ->
+					callback err, null if err?
+					PageCache.set @_internalId, window
+					callback null, window
 
 Page.pages = {}
 Page.addPage = (pageName, page) ->
 	Page.pages[pageName] = page
+
+
 
 class PageCache
 	constructor: (@id, @data) ->
@@ -64,8 +82,8 @@ class TypeRequest
 
 		subtype = type[Type.typeKeyword]
 		results = []
-		for (i = 0; i < nodes.length; ++i) #refactor this
-			results.push @traverse subtype, nodes[i]
+
+		results.push(@traverse subtype, node) for node in nodes
 
 		return results
 
@@ -107,5 +125,6 @@ module.exports =
 	Type: Type,
 	PageCache: PageCache,
 	addPage: Page.addPage,
-	pages: Page.pages
+	pages: Page.pages,
+	request: request
 

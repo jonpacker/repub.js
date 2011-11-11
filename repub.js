@@ -1,5 +1,7 @@
 (function() {
-  var Page, PageCache, Type, TypeRequest, request, uniqueId;
+  var Page, PageCache, Type, TypeRequest, http, jsdom, request, uniqueId;
+  http = require('http');
+  jsdom = require('jsdom');
   uniqueId = (function() {
     var count;
     count = 0;
@@ -12,6 +14,31 @@
       this.requestOptions = requestOptions;
       Page.pages[this._internalId = uniqueId()] = this;
     }
+    Page.prototype.request = function(callback) {
+      if (PageCache.exists(this._internalId)) {
+        return PageCache.get(this._internalId);
+      }
+      return http.request(this.requestOptions, function() {
+        var data;
+        data = '';
+        res.setEncoding('binary');
+        res.on('data', function(chunk) {
+          return data += chunk;
+        });
+        return res.on('end', function() {
+          return jsdom.env({
+            html: data,
+            done: function(err, window) {
+              if (err != null) {
+                callback(err, null);
+              }
+              PageCache.set(this._internalId, window);
+              return callback(null, window);
+            }
+          });
+        });
+      });
+    };
     return Page;
   })();
   Page.pages = {};
@@ -68,18 +95,42 @@
       this.type = type;
       this.page = page;
       this.callback = callback;
-      this.traverse(this.type);
+      this.page.request(function(err, window) {
+        if (!(err != null)) {
+          this.callback(err, null);
+        }
+        return this.traverse(this.type, window.document);
+      });
     }
-    TypeRequest.prototype.traverse = function(type, out) {
-      var key, value;
-      if (out == null) {
-        out = {};
+    TypeRequest.prototype.readType = function(type, element, out) {
+      var node, nodes, results, subtype, _i, _len;
+      nodes = element.querySelectorAll(type[Type.scopeKeyword]);
+      if (nodes.length === 0) {
+        return [];
       }
+      subtype = type[Type.typeKeyword];
+      results = [];
+      for (_i = 0, _len = nodes.length; _i < _len; _i++) {
+        node = nodes[_i];
+        results.push(this.traverse(subtype, node));
+      }
+      return results;
+    };
+    TypeRequest.prototype.parseNode = function(selector, element) {
+      var node, _ref;
+      if (!(selector != null)) {
+        return element != null ? element.textContent : void 0;
+      }
+      node = element.querySelector(selector);
+      return node != null ? (_ref = node.textContent) != null ? _ref.trim() : void 0 : void 0;
+    };
+    TypeRequest.prototype.traverse = function(type, element) {
+      var key, value;
       if (this.isType(type)) {
-        return this.readType(type);
+        return this.readType(type, element);
       }
       if (typeof type === 'string' || !type) {
-        return this.parseNode(type);
+        return this.parseNode(type, element);
       }
       for (key in type) {
         value = type[key];
@@ -103,6 +154,7 @@
     Type: Type,
     PageCache: PageCache,
     addPage: Page.addPage,
-    pages: Page.pages
+    pages: Page.pages,
+    request: request
   };
 }).call(this);

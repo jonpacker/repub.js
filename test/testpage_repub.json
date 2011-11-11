@@ -1,16 +1,16 @@
 { 
-	'_scope': '#scopeContainer .resultItem',
-	'_type': {
-		'title': '.resultTitle',
-		'items': {
-			'_scope': '.subItems li',
-			'_type': null
+	"_scope": "#scopeContainer .resultItem",
+	"_type": {
+		"title": ".resultTitle",
+		"items": {
+			"_scope": ".subItems li",
+			"_type": null
 		},
-		'possible_items': {
-			'_scope': '.sometimesExistingSubItems li',
-			'_type': {
-				'title': 'span:nth-child(1)',
-				'detail': 'span:nth-child(2)'
+		"possible_items": {
+			"_scope": ".sometimesExistingSubItems li",
+			"_type": {
+				"title": "span:nth-child(1)",
+				"detail": "span:nth-child(2)"
 			}
 		}
 	}
