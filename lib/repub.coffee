@@ -16,7 +16,7 @@ class Page
 	constructor: (@requestOptions) ->
 		Page.pages[@_internalId = uniqueId()] = this
 	request: (callback) ->
-		return PageCache.get @_internalId if PageCache.exists @_internalId
+		callback null, PageCache.get @_internalId if PageCache.exists @_internalId
 
 		http.request @requestOptions, ->
 			data = ''
@@ -72,18 +72,23 @@ Type.scopeKeyword = '_scope'
 
 class TypeRequest
 	constructor: (@type, @page, @callback) ->
+		self = this
+
+		@type = @type.structure if @type instanceof Type
+
 		@page.request (err, window) ->
-			@callback err, null if not err?
-			@traverse @type, window.document
+			self.callback err, null if err?
+			result = self.traverse self.type, window.document
+			self.callback null, result
 	
-	readType: (type, element, out) ->
+	readType: (type, element) ->
 		nodes = element.querySelectorAll type[Type.scopeKeyword]
 		return [] if nodes.length is 0
 
 		subtype = type[Type.typeKeyword]
 		results = []
 
-		results.push(@traverse subtype, node) for node in nodes
+		results.push @traverse subtype, node for node in nodes
 
 		return results
 
@@ -96,6 +101,7 @@ class TypeRequest
 	# Recursive - takes a section of a type, decides what to do with it. If it is
 	# a type itself, this will move on to readType which sets context. 
 	traverse: (type, element) ->
+	
 		# Check if this is a type - if so, we switch to that context and it will
 		# continue the recursion by itself.
 		return @readType type, element if @isType type
@@ -104,10 +110,11 @@ class TypeRequest
 		# fetch data from the doc. (Null is also valid).
 		return @parseNode type, element if typeof type is 'string' or not type
 
+
 		# Otherwise, we've got an object to iterate through.
+		out = {}
 		for key, value of type
 			out[key] = @traverse value, out
-
 		out
 
 	# Returns true if 'obj' is a 'type'. This is qualified by it being truthy, and

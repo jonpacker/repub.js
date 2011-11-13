@@ -16,7 +16,7 @@
     }
     Page.prototype.request = function(callback) {
       if (PageCache.exists(this._internalId)) {
-        return PageCache.get(this._internalId);
+        callback(null, PageCache.get(this._internalId));
       }
       return http.request(this.requestOptions, function() {
         var data;
@@ -92,18 +92,31 @@
   Type.scopeKeyword = '_scope';
   TypeRequest = (function() {
     function TypeRequest(type, page, callback) {
+      var self;
       this.type = type;
       this.page = page;
       this.callback = callback;
+      self = this;
+      if (this.type instanceof Type) {
+        this.type = this.type.structure;
+      }
       this.page.request(function(err, window) {
-        if (!(err != null)) {
-          this.callback(err, null);
+        var result;
+        if (err != null) {
+          self.callback(err, null);
         }
-        return this.traverse(this.type, window.document);
+        result = self.traverse(self.type, window.document);
+        return self.callback(null, result);
       });
     }
-    TypeRequest.prototype.readType = function(type, element, out) {
+    TypeRequest.prototype.readType = function(type, element) {
       var node, nodes, results, subtype, _i, _len;
+      if (querySelectorAll in element) {
+        console.log("true");
+      }
+      if (querySelector in element) {
+        console.log("true");
+      }
       nodes = element.querySelectorAll(type[Type.scopeKeyword]);
       if (nodes.length === 0) {
         return [];
@@ -125,13 +138,14 @@
       return node != null ? (_ref = node.textContent) != null ? _ref.trim() : void 0 : void 0;
     };
     TypeRequest.prototype.traverse = function(type, element) {
-      var key, value;
+      var key, out, value;
       if (this.isType(type)) {
         return this.readType(type, element);
       }
       if (typeof type === 'string' || !type) {
         return this.parseNode(type, element);
       }
+      out = {};
       for (key in type) {
         value = type[key];
         out[key] = this.traverse(value, out);
