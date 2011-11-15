@@ -25,9 +25,11 @@ loadData = (assert, callback) ->
 	# Create our type
 	type = new repub.Type JSON.parse type
 
+
 	# Load up the DOM
 	jsdom.env 
 		html: data
+		scripts: repub.ElementSelector.current().scripts
 		features:
 				QuerySelector: true
 		done: (err, window) ->

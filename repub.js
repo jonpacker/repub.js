@@ -1,9 +1,12 @@
 (function() {
-  var Page, PageCache, Type, TypeRequest, fs, http, jsdom, request, sizzle, uniqueId;
+  var ElementSelector, Page, PageCache, Type, TypeRequest, fs, http, jsdom, options, querySelector, querySelectorAll, request, uniqueId;
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __slice = Array.prototype.slice;
   http = require('http');
   jsdom = require('jsdom');
   fs = require('fs');
-  sizzle = fs.readFileSync('./vendor/sizzle.js').toString();
+  options = {
+    elementSelector: 'jquery'
+  };
   uniqueId = (function() {
     var count;
     count = 0;
@@ -17,9 +20,11 @@
       Page.pages[this._internalId = uniqueId()] = this;
     }
     Page.prototype.request = function(callback) {
+      var scriptsToUse;
       if (PageCache.exists(this._internalId)) {
         callback(null, PageCache.get(this._internalId));
       }
+      scriptsToUse = ElementSelector.current().scripts;
       return http.request(this.requestOptions, function() {
         var data;
         data = '';
@@ -30,8 +35,9 @@
         return res.on('end', function() {
           return jsdom.env({
             html: data,
+            scripts: scriptsToUse,
             features: {
-              QuerySelector: true
+              QuerySelector: false
             },
             done: function(err, window) {
               if (err != null) {
@@ -105,22 +111,20 @@
       if (this.type instanceof Type) {
         this.type = this.type.structure;
       }
-      this.page.request(function(err, window) {
+      this.page.request(__bind(function(err, window) {
         var result;
         if (err != null) {
-          self.callback(err, null);
+          this.callback(err, null);
         }
-        result = self.traverse(self.type, window.document);
-        return self.callback(null, result);
-      });
+        this.context = window;
+        result = this.traverse(this.type, window.document);
+        return this.callback(null, result);
+      }, this));
     }
     TypeRequest.prototype.readType = function(type, element) {
       var node, nodes, results, subtype, _i, _len;
-      nodes = element.querySelectorAll(type[Type.scopeKeyword]);
-      console.log("######");
-      console.log("PARENT- " + (element.toString()));
-      console.log("CHILDREN- " + (nodes.toString()));
-      if (nodes.length === 0) {
+      nodes = querySelectorAll(this.context, element, type[Type.scopeKeyword]);
+      if (!(nodes != null) || nodes.length === 0) {
         return [];
       }
       subtype = type[Type.typeKeyword];
@@ -136,7 +140,7 @@
       if (!(selector != null)) {
         return element != null ? (_ref = element.textContent) != null ? _ref.trim() : void 0 : void 0;
       }
-      node = element.querySelector(selector);
+      node = querySelector(this.context, element, selector);
       return node != null ? (_ref2 = node.textContent) != null ? _ref2.trim() : void 0 : void 0;
     };
     TypeRequest.prototype.traverse = function(type, element) {
@@ -159,6 +163,56 @@
     };
     return TypeRequest;
   })();
+  ElementSelector = (function() {
+    function ElementSelector() {
+      var querySelectorAll, scripts;
+      querySelectorAll = arguments[0], scripts = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      this.querySelectorAll = querySelectorAll;
+      this.scripts = scripts;
+    }
+    ElementSelector.prototype.querySelector = function(window, element, selector) {
+      var result;
+      result = this.querySelectorAll(window, element, selector);
+      if (!result || !(result != null ? result.length : void 0)) {
+        return;
+      }
+      return result[0];
+    };
+    return ElementSelector;
+  })();
+  ElementSelector.all = (function() {
+    var jqueryCode, jqueryElementSelector, jquerySelect, nativeElementSelector, nativeSelect;
+    jqueryCode = fs.readFileSync('./vendor/jquery-1.6.4.js', 'utf8');
+    jquerySelect = function(window, element, selector) {
+      var _ref, _ref2;
+      return window != null ? typeof window.$ === "function" ? (_ref = window.$(element)) != null ? typeof _ref.find === "function" ? (_ref2 = _ref.find(selector)) != null ? typeof _ref2.get === "function" ? _ref2.get() : void 0 : void 0 : void 0 : void 0 : void 0 : void 0;
+    };
+    jqueryElementSelector = new ElementSelector(jquerySelect, jqueryCode);
+    jqueryElementSelector.querySelector = function(window, element, selector) {
+      var _ref, _ref2, _ref3;
+      return window != null ? typeof window.$ === "function" ? (_ref = window.$(element)) != null ? typeof _ref.find === "function" ? (_ref2 = _ref.find(selector)) != null ? typeof _ref2.first === "function" ? (_ref3 = _ref2.first()) != null ? typeof _ref3.get === "function" ? _ref3.get() : void 0 : void 0 : void 0 : void 0 : void 0 : void 0 : void 0 : void 0;
+    };
+    nativeSelect = function(window, element, selector) {
+      return element != null ? typeof element.querySelectorAll === "function" ? element.querySelectorAll(selector) : void 0 : void 0;
+    };
+    nativeElementSelector = new ElementSelector(nativeSelect);
+    nativeElementSelector.querySelector = function(window, element, selector) {
+      return element != null ? typeof element.querySelector === "function" ? element.querySelector(selector) : void 0 : void 0;
+    };
+    return {
+      jquery: jqueryElementSelector,
+      "native": nativeElementSelector
+    };
+  })();
+  ElementSelector.current = function() {
+    return ElementSelector.all[options.elementSelector];
+  };
+  querySelectorAll = function(window, element, selector) {
+    return ElementSelector.current().querySelectorAll(window, element, selector);
+  };
+  querySelector = function(window, element, selector) {
+    return ElementSelector.current().querySelector(window, element, selector);
+  };
   request = function(type, page, callback) {
     if (callback == null) {
       callback = function() {};
@@ -171,6 +225,8 @@
     PageCache: PageCache,
     addPage: Page.addPage,
     pages: Page.pages,
-    request: request
+    request: request,
+    options: options,
+    ElementSelector: ElementSelector
   };
 }).call(this);

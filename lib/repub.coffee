@@ -8,7 +8,9 @@
 http = require 'http'
 jsdom = require 'jsdom'
 fs = require 'fs'
-sizzle = fs.readFileSync('./vendor/sizzle.js').toString()
+
+options = 
+	elementSelector: 'jquery'
 
 uniqueId = do ->
 	count = 0
@@ -20,14 +22,19 @@ class Page
 	request: (callback) ->
 		callback null, PageCache.get @_internalId if PageCache.exists @_internalId
 
+		scriptsToUse = ElementSelector.current().scripts
 		http.request @requestOptions, ->
 			data = ''
 			res.setEncoding 'binary'
 			res.on 'data', (chunk) -> data += chunk
 			res.on 'end', -> jsdom.env
 				html: data
+				scripts: scriptsToUse
 				features:
-					QuerySelector: true
+					# going to have to do something about this when native impl is used - can't
+					# just include a script like other ElementSelectors. Or can we? todo: look up
+					# polyfills.
+					QuerySelector: false 
 				done: (err, window) ->
 					callback err, null if err?
 					PageCache.set @_internalId, window
@@ -80,19 +87,16 @@ class TypeRequest
 
 		@type = @type.structure if @type instanceof Type
 
-		@page.request (err, window) ->
-			self.callback err, null if err?
-			result = self.traverse self.type, window.document
-			self.callback null, result
+		@page.request (err, window) =>
+			@callback err, null if err?
+			@context = window
+			result = @traverse @type, window.document
+			@callback null, result
 	
 	readType: (type, element) ->
-		nodes = element.querySelectorAll type[Type.scopeKeyword]
+		nodes = querySelectorAll @context, element, type[Type.scopeKeyword]
 
-		console.log "######"
-		console.log "PARENT- #{element.toString()}"
-		console.log "CHILDREN- #{nodes.toString()}"
-
-		return [] if nodes.length is 0
+		return [] if not nodes? or nodes.length is 0
 
 		subtype = type[Type.typeKeyword]
 		results = []
@@ -104,7 +108,7 @@ class TypeRequest
 	parseNode: (selector, element) ->
 		# If !selector, return all text content of the current element
 		return element?.textContent?.trim() if not selector?
-		node = element.querySelector selector
+		node = querySelector @context, element, selector
 		return node?.textContent?.trim()
 
 	# Recursive - takes a section of a type, decides what to do with it. If it is
@@ -132,9 +136,52 @@ class TypeRequest
 		obj? and 
 		typeof obj is 'object' and 
 		Type.scopeKeyword of obj and 
-		Type.typeKeyword of obj
+		Type.typeKeyword of obj		
 
-		
+# An ElementSelector has one method of interest, it takes a jsdom context (window),
+# an element as context (element), and a selector to find child elements by. This is
+# needed because of a bug (#364) in jsdom that fails when selecting descendant elements.
+#
+# The ElementSelector class allows us to create multiple implementations of element
+# filtering, so we can insert jQuery in here.
+#
+# Obviously if you want to use jQuery you need to include it, and that's what the (scripts)
+# var is all about. It will be joined onto any other scrips repub decides to use and 
+# assimilated with all doms, so it will be there to use in your window context
+class ElementSelector
+	constructor: (@querySelectorAll, @scripts...) ->
+
+	# Maybe some performance improvements to make here?
+	querySelector: (window, element, selector) ->
+		result = @querySelectorAll window, element, selector 
+		return undefined if not result or not result?.length
+		result[0]
+
+ElementSelector.all = do ->
+	jqueryCode = fs.readFileSync './vendor/jquery-1.6.4.js', 'utf8'
+	jquerySelect = (window, element, selector) -> 
+		window?.$?(element)?.find?(selector)?.get?()
+
+	jqueryElementSelector = new ElementSelector jquerySelect, jqueryCode
+	jqueryElementSelector.querySelector = (window, element, selector) ->
+		window?.$?(element)?.find?(selector)?.first?()?.get?() #minor opt
+
+	# native implementation, for when jsdom bug is fixed. DO NOT USE YET.
+	nativeSelect = (window, element, selector) -> element?.querySelectorAll?(selector)
+	nativeElementSelector = new ElementSelector nativeSelect
+	nativeElementSelector.querySelector = (window, element, selector) ->
+		element?.querySelector?(selector)
+
+	return jquery: jqueryElementSelector, native: nativeElementSelector
+
+# Returns the selector currently specified in options
+ElementSelector.current = -> ElementSelector.all[options.elementSelector]
+
+# Local namespace convenience methods
+querySelectorAll = (window, element, selector) ->
+	ElementSelector.current().querySelectorAll window, element, selector
+querySelector = (window, element, selector) ->
+	ElementSelector.current().querySelector window, element, selector
 
 request = (type, page, callback = ->) -> new TypeRequest type, page, callback
 
@@ -144,5 +191,8 @@ module.exports =
 	PageCache: PageCache,
 	addPage: Page.addPage,
 	pages: Page.pages,
-	request: request
+	request: request,
+	options: options,
+	ElementSelector: ElementSelector
+
 
