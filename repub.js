@@ -1,7 +1,9 @@
 (function() {
-  var Page, PageCache, Type, TypeRequest, http, jsdom, request, uniqueId;
+  var Page, PageCache, Type, TypeRequest, fs, http, jsdom, request, sizzle, uniqueId;
   http = require('http');
   jsdom = require('jsdom');
+  fs = require('fs');
+  sizzle = fs.readFileSync('./vendor/sizzle.js').toString();
   uniqueId = (function() {
     var count;
     count = 0;
@@ -28,6 +30,9 @@
         return res.on('end', function() {
           return jsdom.env({
             html: data,
+            features: {
+              QuerySelector: true
+            },
             done: function(err, window) {
               if (err != null) {
                 callback(err, null);
@@ -111,13 +116,10 @@
     }
     TypeRequest.prototype.readType = function(type, element) {
       var node, nodes, results, subtype, _i, _len;
-      if (querySelectorAll in element) {
-        console.log("true");
-      }
-      if (querySelector in element) {
-        console.log("true");
-      }
       nodes = element.querySelectorAll(type[Type.scopeKeyword]);
+      console.log("######");
+      console.log("PARENT- " + (element.toString()));
+      console.log("CHILDREN- " + (nodes.toString()));
       if (nodes.length === 0) {
         return [];
       }
@@ -130,30 +132,30 @@
       return results;
     };
     TypeRequest.prototype.parseNode = function(selector, element) {
-      var node, _ref;
+      var node, _ref, _ref2;
       if (!(selector != null)) {
-        return element != null ? element.textContent : void 0;
+        return element != null ? (_ref = element.textContent) != null ? _ref.trim() : void 0 : void 0;
       }
       node = element.querySelector(selector);
-      return node != null ? (_ref = node.textContent) != null ? _ref.trim() : void 0 : void 0;
+      return node != null ? (_ref2 = node.textContent) != null ? _ref2.trim() : void 0 : void 0;
     };
     TypeRequest.prototype.traverse = function(type, element) {
       var key, out, value;
       if (this.isType(type)) {
         return this.readType(type, element);
       }
-      if (typeof type === 'string' || !type) {
+      if (typeof type === 'string' || !(type != null)) {
         return this.parseNode(type, element);
       }
       out = {};
       for (key in type) {
         value = type[key];
-        out[key] = this.traverse(value, out);
+        out[key] = this.traverse(value, element);
       }
       return out;
     };
     TypeRequest.prototype.isType = function(obj) {
-      return obj && Type.scopeKeyword in obj && Type.typeKeyword in obj;
+      return (obj != null) && typeof obj === 'object' && Type.scopeKeyword in obj && Type.typeKeyword in obj;
     };
     return TypeRequest;
   })();

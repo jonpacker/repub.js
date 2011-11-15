@@ -14,8 +14,8 @@ loadData = (assert, callback) ->
 
 	# No reason not to do these synchronously in a test. May optimize later and
 	# cache them ?
-	data = fs.readFileSync testPageFile
-	type = fs.readFileSync testTypeFile
+	data = fs.readFileSync(testPageFile).toString()
+	type = fs.readFileSync(testTypeFile).toString()
 	assert.ok data, "Couldn't read test page data from file: #{testPageFile}"
 	assert.ok type, "Couldn't read test type data from file: #{testTypeFile}"
 
@@ -28,6 +28,8 @@ loadData = (assert, callback) ->
 	# Load up the DOM
 	jsdom.env 
 		html: data
+		features:
+				QuerySelector: true
 		done: (err, window) ->
 			repub.PageCache.set page._internalId, window
 			callback type, page

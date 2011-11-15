@@ -7,6 +7,8 @@
 
 http = require 'http'
 jsdom = require 'jsdom'
+fs = require 'fs'
+sizzle = fs.readFileSync('./vendor/sizzle.js').toString()
 
 uniqueId = do ->
 	count = 0
@@ -24,6 +26,8 @@ class Page
 			res.on 'data', (chunk) -> data += chunk
 			res.on 'end', -> jsdom.env
 				html: data
+				features:
+					QuerySelector: true
 				done: (err, window) ->
 					callback err, null if err?
 					PageCache.set @_internalId, window
@@ -83,6 +87,11 @@ class TypeRequest
 	
 	readType: (type, element) ->
 		nodes = element.querySelectorAll type[Type.scopeKeyword]
+
+		console.log "######"
+		console.log "PARENT- #{element.toString()}"
+		console.log "CHILDREN- #{nodes.toString()}"
+
 		return [] if nodes.length is 0
 
 		subtype = type[Type.typeKeyword]
@@ -94,7 +103,7 @@ class TypeRequest
 
 	parseNode: (selector, element) ->
 		# If !selector, return all text content of the current element
-		return element?.textContent if not selector?
+		return element?.textContent?.trim() if not selector?
 		node = element.querySelector selector
 		return node?.textContent?.trim()
 
@@ -108,20 +117,22 @@ class TypeRequest
 
 		# If this is a string then we've hit an endpoint and it's time to actually
 		# fetch data from the doc. (Null is also valid).
-		return @parseNode type, element if typeof type is 'string' or not type
-
+		return @parseNode type, element if typeof type is 'string' or not type?
 
 		# Otherwise, we've got an object to iterate through.
 		out = {}
 		for key, value of type
-			out[key] = @traverse value, out
+			out[key] = @traverse value, element
 		out
 
 	# Returns true if 'obj' is a 'type'. This is qualified by it being truthy, and
 	# owning both the 'Type.scopeKeyword' and 'Type.typeKeyword' keywords. By
 	# default those are set to '_scope' and '_type' - but can be changed. 
 	isType: (obj) ->
-		obj and Type.scopeKeyword of obj and Type.typeKeyword of obj
+		obj? and 
+		typeof obj is 'object' and 
+		Type.scopeKeyword of obj and 
+		Type.typeKeyword of obj
 
 		
 
