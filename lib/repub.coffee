@@ -21,17 +21,20 @@ class Page
 	request: (callback) ->
 		callback null, PageCache.get @_internalId if PageCache.exists @_internalId
 
-		http.request @requestOptions, ->
+		req = http.request @requestOptions, (res) ->
 			data = ''
 			res.setEncoding 'binary'
 			res.on 'data', (chunk) -> data += chunk
-			res.on 'end', -> jsdom.env
-				html: data
-				src: [jQuerySrc]
-				done: (err, window) ->
-					callback err, null if err?
-					PageCache.set @_internalId, window
-					callback null, window
+			res.on 'end', -> 
+				jsdom.env
+					html: data
+					src: [jQuerySrc]
+					done: (err, window) ->
+						callback err, null if err?
+						PageCache.set @_internalId, window
+						callback null, window
+		# TODO: request body - big area for improvement, customization of page
+		req.end()
 
 Page.pages = {}
 Page.addPage = (pageName, page) ->

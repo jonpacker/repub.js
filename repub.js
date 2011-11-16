@@ -18,10 +18,11 @@
       Page.pages[this._internalId = uniqueId()] = this;
     }
     Page.prototype.request = function(callback) {
+      var req;
       if (PageCache.exists(this._internalId)) {
         callback(null, PageCache.get(this._internalId));
       }
-      return http.request(this.requestOptions, function() {
+      req = http.request(this.requestOptions, function(res) {
         var data;
         data = '';
         res.setEncoding('binary');
@@ -36,12 +37,14 @@
               if (err != null) {
                 callback(err, null);
               }
+              console.log(window.$);
               PageCache.set(this._internalId, window);
               return callback(null, window);
             }
           });
         });
       });
+      return req.end();
     };
     return Page;
   })();
