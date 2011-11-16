@@ -25,13 +25,10 @@ loadData = (assert, callback) ->
 	# Create our type
 	type = new repub.Type JSON.parse type
 
-
 	# Load up the DOM
 	jsdom.env 
 		html: data
-		scripts: repub.ElementSelector.current().scripts
-		features:
-				QuerySelector: true
+		src: repub.ElementSelector.current().scripts
 		done: (err, window) ->
 			repub.PageCache.set page._internalId, window
 			callback type, page
@@ -69,7 +66,6 @@ tests =
 						possible_items: null
 					}]
 
-				console.log expectedStructure
 				assert.eql result, expectedStructure
 		
 module.exports = tests

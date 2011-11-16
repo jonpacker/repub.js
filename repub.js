@@ -35,7 +35,7 @@
         return res.on('end', function() {
           return jsdom.env({
             html: data,
-            scripts: scriptsToUse,
+            src: scriptsToUse,
             features: {
               QuerySelector: false
             },
@@ -136,12 +136,13 @@
       return results;
     };
     TypeRequest.prototype.parseNode = function(selector, element) {
-      var node, _ref, _ref2;
-      if (!(selector != null)) {
-        return element != null ? (_ref = element.textContent) != null ? _ref.trim() : void 0 : void 0;
+      var node;
+      if (!selector) {
+        return element.textContent.trim();
       }
       node = querySelector(this.context, element, selector);
-      return node != null ? (_ref2 = node.textContent) != null ? _ref2.trim() : void 0 : void 0;
+      console.log(this.context.$(node).text());
+      return node.textContent.trim();
     };
     TypeRequest.prototype.traverse = function(type, element) {
       var key, out, value;
@@ -182,15 +183,13 @@
   })();
   ElementSelector.all = (function() {
     var jqueryCode, jqueryElementSelector, jquerySelect, nativeElementSelector, nativeSelect;
-    jqueryCode = fs.readFileSync('./vendor/jquery-1.6.4.js', 'utf8');
+    jqueryCode = fs.readFileSync('./vendor/jquery-1.6.4.js').toString();
     jquerySelect = function(window, element, selector) {
-      var _ref, _ref2;
-      return window != null ? typeof window.$ === "function" ? (_ref = window.$(element)) != null ? typeof _ref.find === "function" ? (_ref2 = _ref.find(selector)) != null ? typeof _ref2.get === "function" ? _ref2.get() : void 0 : void 0 : void 0 : void 0 : void 0 : void 0;
+      return window.$(element).find(selector).get();
     };
     jqueryElementSelector = new ElementSelector(jquerySelect, jqueryCode);
     jqueryElementSelector.querySelector = function(window, element, selector) {
-      var _ref, _ref2, _ref3;
-      return window != null ? typeof window.$ === "function" ? (_ref = window.$(element)) != null ? typeof _ref.find === "function" ? (_ref2 = _ref.find(selector)) != null ? typeof _ref2.first === "function" ? (_ref3 = _ref2.first()) != null ? typeof _ref3.get === "function" ? _ref3.get() : void 0 : void 0 : void 0 : void 0 : void 0 : void 0 : void 0 : void 0;
+      return window.$(element).find(selector).first().get();
     };
     nativeSelect = function(window, element, selector) {
       return element != null ? typeof element.querySelectorAll === "function" ? element.querySelectorAll(selector) : void 0 : void 0;

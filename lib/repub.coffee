@@ -29,7 +29,7 @@ class Page
 			res.on 'data', (chunk) -> data += chunk
 			res.on 'end', -> jsdom.env
 				html: data
-				scripts: scriptsToUse
+				src: scriptsToUse
 				features:
 					# going to have to do something about this when native impl is used - can't
 					# just include a script like other ElementSelectors. Or can we? todo: look up
@@ -107,9 +107,10 @@ class TypeRequest
 
 	parseNode: (selector, element) ->
 		# If !selector, return all text content of the current element
-		return element?.textContent?.trim() if not selector?
+		return element.textContent.trim() if not selector
 		node = querySelector @context, element, selector
-		return node?.textContent?.trim()
+		console.log @context.$(node).text()
+		return node.textContent.trim()
 
 	# Recursive - takes a section of a type, decides what to do with it. If it is
 	# a type itself, this will move on to readType which sets context. 
@@ -158,13 +159,13 @@ class ElementSelector
 		result[0]
 
 ElementSelector.all = do ->
-	jqueryCode = fs.readFileSync './vendor/jquery-1.6.4.js', 'utf8'
+	jqueryCode = fs.readFileSync('./vendor/jquery-1.6.4.js').toString()
 	jquerySelect = (window, element, selector) -> 
-		window?.$?(element)?.find?(selector)?.get?()
+		window.$(element).find(selector).get()
 
 	jqueryElementSelector = new ElementSelector jquerySelect, jqueryCode
 	jqueryElementSelector.querySelector = (window, element, selector) ->
-		window?.$?(element)?.find?(selector)?.first?()?.get?() #minor opt
+		window.$(element).find(selector).first().get() #minor opt
 
 	# native implementation, for when jsdom bug is fixed. DO NOT USE YET.
 	nativeSelect = (window, element, selector) -> element?.querySelectorAll?(selector)
