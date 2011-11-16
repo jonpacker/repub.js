@@ -1,6 +1,7 @@
 repub = require '../repub.js'
 fs = require 'fs'
 jsdom = require 'jsdom'
+jQuerySrc = fs.readFileSync('./vendor/jquery-1.6.4.js').toString()
 
 testPageFile = './test/testpage.html'
 testTypeFile = './test/testpage_repub.json'
@@ -28,7 +29,7 @@ loadData = (assert, callback) ->
 	# Load up the DOM
 	jsdom.env 
 		html: data
-		src: repub.ElementSelector.current().scripts
+		src: [jQuerySrc]
 		done: (err, window) ->
 			repub.PageCache.set page._internalId, window
 			callback type, page
@@ -63,7 +64,7 @@ tests =
 					}, {
 						title: 'testTitle2',
 						items: ['subTestSubItem1', 'subTestSubItem2', 'subTestSubItem3'],
-						possible_items: null
+						possible_items: []
 					}]
 
 				assert.eql result, expectedStructure

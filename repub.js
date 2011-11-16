@@ -1,12 +1,10 @@
 (function() {
-  var ElementSelector, Page, PageCache, Type, TypeRequest, fs, http, jsdom, options, querySelector, querySelectorAll, request, uniqueId;
-  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __slice = Array.prototype.slice;
+  var Page, PageCache, Type, TypeRequest, fs, http, jQuerySrc, jsdom, request, uniqueId;
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   http = require('http');
   jsdom = require('jsdom');
   fs = require('fs');
-  options = {
-    elementSelector: 'jquery'
-  };
+  jQuerySrc = fs.readFileSync('./vendor/jquery-1.6.4.js').toString();
   uniqueId = (function() {
     var count;
     count = 0;
@@ -20,11 +18,9 @@
       Page.pages[this._internalId = uniqueId()] = this;
     }
     Page.prototype.request = function(callback) {
-      var scriptsToUse;
       if (PageCache.exists(this._internalId)) {
         callback(null, PageCache.get(this._internalId));
       }
-      scriptsToUse = ElementSelector.current().scripts;
       return http.request(this.requestOptions, function() {
         var data;
         data = '';
@@ -35,10 +31,7 @@
         return res.on('end', function() {
           return jsdom.env({
             html: data,
-            src: scriptsToUse,
-            features: {
-              QuerySelector: false
-            },
+            src: [jQuerySrc],
             done: function(err, window) {
               if (err != null) {
                 callback(err, null);
@@ -123,7 +116,7 @@
     }
     TypeRequest.prototype.readType = function(type, element) {
       var node, nodes, results, subtype, _i, _len;
-      nodes = querySelectorAll(this.context, element, type[Type.scopeKeyword]);
+      nodes = this.context.$(element).find(type[Type.scopeKeyword]).get();
       if (!(nodes != null) || nodes.length === 0) {
         return [];
       }
@@ -136,13 +129,10 @@
       return results;
     };
     TypeRequest.prototype.parseNode = function(selector, element) {
-      var node;
       if (!selector) {
-        return element.textContent.trim();
+        return this.context.$(element).text().trim();
       }
-      node = querySelector(this.context, element, selector);
-      console.log(this.context.$(node).text());
-      return node.textContent.trim();
+      return this.context.$(element).find(selector).first().text().trim();
     };
     TypeRequest.prototype.traverse = function(type, element) {
       var key, out, value;
@@ -164,54 +154,6 @@
     };
     return TypeRequest;
   })();
-  ElementSelector = (function() {
-    function ElementSelector() {
-      var querySelectorAll, scripts;
-      querySelectorAll = arguments[0], scripts = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-      this.querySelectorAll = querySelectorAll;
-      this.scripts = scripts;
-    }
-    ElementSelector.prototype.querySelector = function(window, element, selector) {
-      var result;
-      result = this.querySelectorAll(window, element, selector);
-      if (!result || !(result != null ? result.length : void 0)) {
-        return;
-      }
-      return result[0];
-    };
-    return ElementSelector;
-  })();
-  ElementSelector.all = (function() {
-    var jqueryCode, jqueryElementSelector, jquerySelect, nativeElementSelector, nativeSelect;
-    jqueryCode = fs.readFileSync('./vendor/jquery-1.6.4.js').toString();
-    jquerySelect = function(window, element, selector) {
-      return window.$(element).find(selector).get();
-    };
-    jqueryElementSelector = new ElementSelector(jquerySelect, jqueryCode);
-    jqueryElementSelector.querySelector = function(window, element, selector) {
-      return window.$(element).find(selector).first().get();
-    };
-    nativeSelect = function(window, element, selector) {
-      return element != null ? typeof element.querySelectorAll === "function" ? element.querySelectorAll(selector) : void 0 : void 0;
-    };
-    nativeElementSelector = new ElementSelector(nativeSelect);
-    nativeElementSelector.querySelector = function(window, element, selector) {
-      return element != null ? typeof element.querySelector === "function" ? element.querySelector(selector) : void 0 : void 0;
-    };
-    return {
-      jquery: jqueryElementSelector,
-      "native": nativeElementSelector
-    };
-  })();
-  ElementSelector.current = function() {
-    return ElementSelector.all[options.elementSelector];
-  };
-  querySelectorAll = function(window, element, selector) {
-    return ElementSelector.current().querySelectorAll(window, element, selector);
-  };
-  querySelector = function(window, element, selector) {
-    return ElementSelector.current().querySelector(window, element, selector);
-  };
   request = function(type, page, callback) {
     if (callback == null) {
       callback = function() {};
@@ -224,8 +166,6 @@
     PageCache: PageCache,
     addPage: Page.addPage,
     pages: Page.pages,
-    request: request,
-    options: options,
-    ElementSelector: ElementSelector
+    request: request
   };
 }).call(this);
