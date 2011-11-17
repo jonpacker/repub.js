@@ -37,7 +37,6 @@
               if (err != null) {
                 callback(err, null);
               }
-              console.log(window.$);
               PageCache.set(this._internalId, window);
               return callback(null, window);
             }
@@ -99,11 +98,9 @@
   Type.scopeKeyword = '_scope';
   TypeRequest = (function() {
     function TypeRequest(type, page, callback) {
-      var self;
       this.type = type;
       this.page = page;
       this.callback = callback;
-      self = this;
       if (this.type instanceof Type) {
         this.type = this.type.structure;
       }
@@ -113,13 +110,13 @@
           this.callback(err, null);
         }
         this.context = window;
-        result = this.traverse(this.type, window.document);
+        result = this.traverse(this.type, this.context.$(this.context.document));
         return this.callback(null, result);
       }, this));
     }
     TypeRequest.prototype.readType = function(type, element) {
       var node, nodes, results, subtype, _i, _len;
-      nodes = this.context.$(element).find(type[Type.scopeKeyword]).get();
+      nodes = element.find(type[Type.scopeKeyword]);
       if (!(nodes != null) || nodes.length === 0) {
         return [];
       }
@@ -127,15 +124,15 @@
       results = [];
       for (_i = 0, _len = nodes.length; _i < _len; _i++) {
         node = nodes[_i];
-        results.push(this.traverse(subtype, node));
+        results.push(this.traverse(subtype, this.context.$(node)));
       }
       return results;
     };
     TypeRequest.prototype.parseNode = function(selector, element) {
       if (!selector) {
-        return this.context.$(element).text().trim();
+        return element.text().trim();
       }
-      return this.context.$(element).find(selector).first().text().trim();
+      return element.find(selector).first().text().trim();
     };
     TypeRequest.prototype.traverse = function(type, element) {
       var key, out, value;

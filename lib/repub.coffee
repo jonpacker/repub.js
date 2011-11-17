@@ -20,7 +20,7 @@ class Page
 		Page.pages[@_internalId = uniqueId()] = this
 	request: (callback) ->
 		callback null, PageCache.get @_internalId if PageCache.exists @_internalId
-
+		
 		req = http.request @requestOptions, (res) ->
 			data = ''
 			res.setEncoding 'binary'
@@ -61,6 +61,7 @@ PageCache.get = (id) -> PageCache.cache[id].data if PageCache.exists id
 PageCache.exists = (id) ->
 	return false if not PageCache.cache.hasOwnProperty id
 
+
 	cache = PageCache.cache[id]
 	if cache.ageInSeconds() > PageCache.maxAge
 		PageCache.expire id
@@ -77,34 +78,34 @@ class Type
 Type.typeKeyword = '_type'
 Type.scopeKeyword = '_scope'
 
+# As of 17-11 - everything that refers to an 'element' in this class is referring
+# to a jQuery-extended element
 class TypeRequest
 	constructor: (@type, @page, @callback) ->
-		self = this
-
 		@type = @type.structure if @type instanceof Type
 
 		@page.request (err, window) =>
 			@callback err, null if err?
 			@context = window
-			result = @traverse @type, window.document
+			result = @traverse @type, @context.$ @context.document
 			@callback null, result
 	
 	readType: (type, element) ->
-		nodes = @context.$(element).find(type[Type.scopeKeyword]).get()
+		nodes = element.find type[Type.scopeKeyword]
 
 		return [] if not nodes? or nodes.length is 0
 
 		subtype = type[Type.typeKeyword]
 		results = []
 
-		results.push @traverse subtype, node for node in nodes
+		results.push @traverse subtype, @context.$(node) for node in nodes
 
 		return results
 
 	parseNode: (selector, element) ->
 		# If !selector, return all text content of the current element
-		return @context.$(element).text().trim() if not selector
-		@context.$(element).find(selector).first().text().trim()
+		return element.text().trim() if not selector
+		element.find(selector).first().text().trim()
 
 	# Recursive - takes a section of a type, decides what to do with it. If it is
 	# a type itself, this will move on to readType which sets context. 
