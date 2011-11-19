@@ -61,7 +61,6 @@ PageCache.get = (id) -> PageCache.cache[id].data if PageCache.exists id
 PageCache.exists = (id) ->
 	return false if not PageCache.cache.hasOwnProperty id
 
-
 	cache = PageCache.cache[id]
 	if cache.ageInSeconds() > PageCache.maxAge
 		PageCache.expire id
@@ -74,6 +73,39 @@ PageCache.expire = (id) -> delete PageCache.cache[id]
 
 class Type
 	constructor: (@structure, @scope) ->
+		if Type.isRawType @structure
+			@structure = @structure[Type.typeKeyword]
+			@scope = @structure[Type.scopeKeyword]
+
+		@structure = Type.flatten @structure
+	
+# Returns true if 'obj' is a 'type'. This is qualified by it being truthy, and
+# owning both the 'Type.scopeKeyword' and 'Type.typeKeyword' keywords. By
+# default those are set to '_scope' and '_type' - but can be changed. 
+Type.isRawType = (obj) ->
+	obj and 
+	typeof obj is 'object' and 
+	Type.scopeKeyword of obj and 
+	Type.typeKeyword of obj		
+	
+# Flattens a structure so that all raw types are identified and converted
+# to 'Type' objects. Expects to start from a structure, not a raw type. However,
+# if a raw type is detected at the base, this will return the result of Type.read
+# instead. Does not recurse explicitly, but since the constructor of Type calls
+# this, it will recurse. 
+Type.flatten = (structure) ->
+	makeFlat = (value) -> 
+		return Type.read value if Type.isRawType value
+		value
+	
+	result = {}
+	result[key] = makeFlat value for key, value of structure
+	result
+
+Type.read = (obj) ->
+	return obj if obj instanceof Type
+	return Type.flatten obj if not Type.isRawType obj
+	new Type obj
 
 Type.typeKeyword = '_type'
 Type.scopeKeyword = '_scope'
@@ -125,14 +157,6 @@ class TypeRequest
 			out[key] = @traverse value, element
 		out
 
-	# Returns true if 'obj' is a 'type'. This is qualified by it being truthy, and
-	# owning both the 'Type.scopeKeyword' and 'Type.typeKeyword' keywords. By
-	# default those are set to '_scope' and '_type' - but can be changed. 
-	isType: (obj) ->
-		obj? and 
-		typeof obj is 'object' and 
-		Type.scopeKeyword of obj and 
-		Type.typeKeyword of obj		
 
 request = (type, page, callback = ->) -> new TypeRequest type, page, callback
 
