@@ -76,7 +76,7 @@ tests =
 		type1Structure = 
 			baserTestItem: 'div'
 			baseNestedType: type0
-		type1 = new repub.type type1Structure, 'div'
+		type1 = new repub.Type type1Structure, 'div'
 
 		assert.eql type1.structure, type1Structure
 		
@@ -89,8 +89,14 @@ tests =
 
 		assert.ok nntype
 		assert.eql nntype.structure, typeStructure
-		
-
+	'test Type#null structures': (be, assert) ->
+		type = new repub.Type null, 'div'
+		assert.isNull type.structure
+		assert.equal type.scope, 'div'
+	'test Type#inferred null structures': (be, assert) ->
+		type = new repub.Type 'div'
+		assert.equal type.scope, 'div'
+		assert.isNull type.structure
 
 module.exports = tests
 

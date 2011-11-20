@@ -44,7 +44,7 @@ tests =
 				assert.isNull err, 'Request error was not null'
 				assert.equal result.length, 2
 
-	'TypeRequest Parsing a Page (exact)': (beforeExit, assert) -> 	
+	'TypeRequest Parsing a Page (exact)': (beforeExit, assert) -> 
 		testStart ->
 			beforeExit -> testFinished()
 			repub.request type, page, (err, result) ->

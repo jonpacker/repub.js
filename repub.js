@@ -110,10 +110,18 @@
       this.structure = structure;
       this.scope = scope;
       if (Type.isRawType(this.structure)) {
-        this.structure = this.structure[Type.typeKeyword];
         this.scope = this.structure[Type.scopeKeyword];
+        this.structure = this.structure[Type.typeKeyword];
       }
-      this.structure = Type.flatten(this.structure);
+      if (this.structure instanceof Type) {
+        this.scope = this.structure.scope;
+        this.structure = this.structure.structure;
+      } else if (typeof this.structure === 'string') {
+        this.scope = this.structure;
+        this.structure = null;
+      } else if (this.structure !== null) {
+        this.structure = Type.flatten(this.structure);
+      }
     }
 
     return Type;
@@ -155,7 +163,7 @@
       this.type = type;
       this.page = page;
       this.callback = callback;
-      if (this.type instanceof Type) this.type = this.type.structure;
+      if (!(this.type instanceof Type)) this.type = new Type(this.type);
       this.page.request(function(err, window) {
         var result;
         if (err != null) _this.callback(err, null);
@@ -166,14 +174,13 @@
     }
 
     TypeRequest.prototype.readType = function(type, element) {
-      var node, nodes, results, subtype, _i, _len;
-      nodes = element.find(type[Type.scopeKeyword]);
+      var node, nodes, results, _i, _len;
+      nodes = element.find(type.scope);
       if (!(nodes != null) || nodes.length === 0) return [];
-      subtype = type[Type.typeKeyword];
       results = [];
       for (_i = 0, _len = nodes.length; _i < _len; _i++) {
         node = nodes[_i];
-        results.push(this.traverse(subtype, this.context.$(node)));
+        results.push(this.traverse(type.structure, this.context.$(node)));
       }
       return results;
     };
@@ -185,7 +192,7 @@
 
     TypeRequest.prototype.traverse = function(type, element) {
       var key, out, value;
-      if (this.isType(type)) return this.readType(type, element);
+      if (type instanceof Type) return this.readType(type, element);
       if (typeof type === 'string' || !(type != null)) {
         return this.parseNode(type, element);
       }

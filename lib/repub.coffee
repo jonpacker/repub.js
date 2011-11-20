@@ -73,11 +73,22 @@ PageCache.expire = (id) -> delete PageCache.cache[id]
 
 class Type
 	constructor: (@structure, @scope) ->
+		# if the user passed a raw type
 		if Type.isRawType @structure
-			@structure = @structure[Type.typeKeyword]
 			@scope = @structure[Type.scopeKeyword]
-
-		@structure = Type.flatten @structure
+			@structure = @structure[Type.typeKeyword]
+		
+		# if the user passed a type obj
+		if @structure instanceof Type
+			@scope = @structure.scope
+			@structure = @structure.structure
+		# or if the user inferred a null structure by only passing scope
+		else if typeof @structure is 'string'
+			@scope = @structure
+			@structure = null
+		# otherwise flatten
+		else if @structure isnt null
+			@structure = Type.flatten @structure
 	
 # Returns true if 'obj' is a 'type'. This is qualified by it being truthy, and
 # owning both the 'Type.scopeKeyword' and 'Type.typeKeyword' keywords. By
@@ -114,7 +125,7 @@ Type.scopeKeyword = '_scope'
 # to a jQuery-extended element
 class TypeRequest
 	constructor: (@type, @page, @callback) ->
-		@type = @type.structure if @type instanceof Type
+		@type = new Type @type if not (@type instanceof Type)
 
 		@page.request (err, window) =>
 			@callback err, null if err?
@@ -123,16 +134,13 @@ class TypeRequest
 			@callback null, result
 	
 	readType: (type, element) ->
-		nodes = element.find type[Type.scopeKeyword]
+		nodes = element.find type.scope
 
 		return [] if not nodes? or nodes.length is 0
 
-		subtype = type[Type.typeKeyword]
 		results = []
-
-		results.push @traverse subtype, @context.$(node) for node in nodes
-
-		return results
+		results.push @traverse type.structure, @context.$ node for node in nodes
+		results
 
 	parseNode: (selector, element) ->
 		# If !selector, return all text content of the current element
@@ -145,7 +153,7 @@ class TypeRequest
 	
 		# Check if this is a type - if so, we switch to that context and it will
 		# continue the recursion by itself.
-		return @readType type, element if @isType type
+		return @readType type, element if type instanceof Type
 
 		# If this is a string then we've hit an endpoint and it's time to actually
 		# fetch data from the doc. (Null is also valid).
