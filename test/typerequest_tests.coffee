@@ -29,9 +29,6 @@ server = do ->
 		theServer.close()
 		delete theServer
 
-
-
-
 tests =
 	'TypeRequest Calls Back': (beforeExit, assert) ->
 		sd = server.setup()

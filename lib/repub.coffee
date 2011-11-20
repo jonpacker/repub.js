@@ -16,10 +16,10 @@ uniqueId = do ->
 	-> "_repub_page_#{count++}"
 
 class Page
-	constructor: (@requestOptions) ->
-		Page.pages[@_internalId = uniqueId()] = this
+	constructor: (page) ->
+		Page.pages[@id = uniqueId()] = this
 	request: (callback) ->
-		callback null, PageCache.get @_internalId if PageCache.exists @_internalId
+		callback null, PageCache.get @id if PageCache.exists @id
 		
 		req = http.request @requestOptions, (res) ->
 			data = ''

@@ -19,17 +19,7 @@ tests =
 		page1 = new repub.Page host: 'nrk.no', port: 80
 		page2 = new repub.Page host: 'finn.no', port: 80
 
-		assert.notEqual page0._internalId, page1._internalId
-		assert.notEqual page0._internalId, page2._internalId
-
-	# Test the addPage method which assigns a page to a given identifier.
-	'test addPage': (beforeExit, assert) ->
-		page = new repub.Page
-			host: 'google.com'
-			port: 80
-
-		repub.addPage 'test_page', page
-		assert.ok repub.pages.hasOwnProperty 'test_page'
-		assert.eql repub.pages['test_page'], page
+		assert.notEqual page0.id, page1.id
+		assert.notEqual page0.id, page2.id
 
 module.exports = tests
