@@ -7,6 +7,8 @@
 
   fs = require('fs');
 
+  request = require('request');
+
   jQuerySrc = fs.readFileSync('./vendor/jquery-1.6.4.js').toString();
 
   uniqueId = (function() {
@@ -19,20 +21,21 @@
 
   Page = (function() {
 
-    function Page(requestOptions) {
-      this.requestOptions = requestOptions;
-      Page.pages[this._internalId = uniqueId()] = this;
+    function Page(request) {
+      this.request = request;
+      Page.pages[this.id = uniqueId()] = this;
+      if (typeof this.request === 'string') {
+        this.request = {
+          uri: this.request
+        };
+      }
+      this.request.encoding = 'binary';
     }
 
     Page.prototype.request = function(callback) {
       var req;
-      if (PageCache.exists(this._internalId)) {
-        callback(null, PageCache.get(this._internalId));
-      }
-      req = http.request(this.requestOptions, function(res) {
-        var data;
-        data = '';
-        res.setEncoding('binary');
+      if (PageCache.exists(this.id)) callback(null, PageCache.get(this.id));
+      req = request(this.request, function(error, response, body) {
         res.on('data', function(chunk) {
           return data += chunk;
         });
@@ -56,10 +59,6 @@
   })();
 
   Page.pages = {};
-
-  Page.addPage = function(pageName, page) {
-    return Page.pages[pageName] = page;
-  };
 
   PageCache = (function() {
 

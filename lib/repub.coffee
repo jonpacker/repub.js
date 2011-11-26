@@ -8,6 +8,7 @@
 http = require 'http'
 jsdom = require 'jsdom'
 fs = require 'fs'
+request = require 'request'
 
 jQuerySrc = fs.readFileSync('./vendor/jquery-1.6.4.js').toString()
 
@@ -16,14 +17,16 @@ uniqueId = do ->
 	-> "_repub_page_#{count++}"
 
 class Page
-	constructor: (page) ->
+	constructor: (@request) ->
 		Page.pages[@id = uniqueId()] = this
+		if typeof @request is 'string'
+			@request = uri: @request
+		@request.encoding = 'binary'
+
 	request: (callback) ->
 		callback null, PageCache.get @id if PageCache.exists @id
 		
-		req = http.request @requestOptions, (res) ->
-			data = ''
-			res.setEncoding 'binary'
+		req = request @request, (error, response, body) ->
 			res.on 'data', (chunk) -> data += chunk
 			res.on 'end', -> 
 				jsdom.env
@@ -37,10 +40,6 @@ class Page
 		req.end()
 
 Page.pages = {}
-Page.addPage = (pageName, page) ->
-	Page.pages[pageName] = page
-
-
 
 class PageCache
 	constructor: (@id, @data) ->
