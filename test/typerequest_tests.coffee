@@ -9,7 +9,7 @@ testTypeFile = './test/testpage_repub.json'
 data = fs.readFileSync(testPageFile).toString()
 type = JSON.parse fs.readFileSync(testTypeFile).toString()
 
-page = new repub.Page { host: '127.0.0.1' }
+page = new repub.Page 'http://127.0.0.1'
 
 server = do ->
 	serverCallback = (req, res) ->
@@ -37,7 +37,7 @@ tests =
 			assert.ok repubFinished, "Callback was never called"
 			server.teardown sd if not repubFinished
 
-		page.requestOptions.port = sd
+		page.request.uri += ':' +  sd
 		repub.request type, page, (err, result) ->
 			repubFinished = yes
 			server.teardown sd
@@ -45,7 +45,7 @@ tests =
 	'TypeRequest Basic Parsing': (beforeExit, assert) ->
 		sd = server.setup()
 
-		page.requestOptions.port = sd
+		page.request.uri += ':' +  sd
 		repub.request type, page, (err, result) ->
 			assert.isNull err, 'Request error was not null'
 			assert.equal result.length, 2
@@ -54,7 +54,7 @@ tests =
 	'TypeRequest Parsing a Page (exact)': (beforeExit, assert) -> 
 		sd = server.setup()
 
-		page.requestOptions.port = sd
+		page.request.uri += ':' +  sd
 		repub.request type, page, (err, result) ->
 			assert.isNull err, 'Request error was not null'
 			assert.equal result.length, 2

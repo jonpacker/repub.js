@@ -23,19 +23,18 @@ class Page
 			@request = uri: @request
 		@request.encoding = 'binary'
 
-	request: (callback) ->
+	makeRequest: (callback) ->
 		callback null, PageCache.get @id if PageCache.exists @id
 		
 		req = request @request, (error, response, body) ->
-			res.on 'data', (chunk) -> data += chunk
-			res.on 'end', -> 
-				jsdom.env
-					html: data
-					src: [jQuerySrc]
-					done: (err, window) ->
-						callback err, null if err?
-						PageCache.set @_internalId, window
-						callback null, window
+			return callback(error) if error or not body
+			jsdom.env
+				html: body
+				src: [jQuerySrc]
+				done: (err, window) ->
+					callback err, null if err?
+					PageCache.set @_internalId, window
+					callback null, window
 		# TODO: request body - big area for improvement, customization of page
 		req.end()
 
@@ -126,7 +125,7 @@ class TypeRequest
 	constructor: (@type, @page, @callback) ->
 		@type = new Type @type if not (@type instanceof Type)
 
-		@page.request (err, window) =>
+		@page.makeRequest (err, window) =>
 			@callback err, null if err?
 			@context = window
 			result = @traverse @type, @context.$ @context.document
@@ -165,7 +164,7 @@ class TypeRequest
 		out
 
 
-request = (type, page, callback = ->) -> new TypeRequest type, page, callback
+makeRequest = (type, page, callback = ->) -> new TypeRequest type, page, callback
 
 module.exports =
 	Page: Page,
@@ -173,6 +172,4 @@ module.exports =
 	PageCache: PageCache,
 	addPage: Page.addPage,
 	pages: Page.pages,
-	request: request
-
-
+	request: makeRequest

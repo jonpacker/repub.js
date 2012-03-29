@@ -1,0 +1,21 @@
+{
+  "author": "Jon Packer <contact@jonpacker.com> (www.jonpacker.com)",
+  "name": "repub",
+  "description": "Repurpose a webpage.",
+  "version": "0.2.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jonpacker/repub.js.git"
+  },
+  "main": "repub.js",
+  "engines": {
+    "node": "~0.6.11"
+  },
+  "dependencies": {
+		"jsdom": "*",
+		"request": "*"
+	},
+  "devDependencies": {
+		"expresso": "*"
+	}	
+}
