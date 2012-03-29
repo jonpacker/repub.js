@@ -10,7 +10,7 @@ jsdom = require 'jsdom'
 fs = require 'fs'
 request = require 'request'
 
-jQuerySrc = fs.readFileSync('./vendor/jquery-1.6.4.js').toString()
+jQuerySrc = fs.readFileSync("#{__dirname}/../vendor/jquery-1.6.4.js").toString()
 
 uniqueId = do ->
 	count = 0
