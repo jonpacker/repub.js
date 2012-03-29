@@ -13,7 +13,8 @@
   },
   "dependencies": {
 		"jsdom": "*",
-		"request": "*"
+		"request": "*",
+		"coffee-script": "*"
 	},
   "devDependencies": {
 		"expresso": "*"
