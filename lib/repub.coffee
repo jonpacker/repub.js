@@ -124,6 +124,7 @@ Type.scopeKeyword = '_scope'
 class TypeRequest
 	constructor: (@type, @page, @callback) ->
 		@type = new Type @type if not (@type instanceof Type)
+		@page = new Page @page if not (@page instanceof Page)
 
 		@page.makeRequest (err, window) =>
 			@callback err, null if err?
