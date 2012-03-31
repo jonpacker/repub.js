@@ -14,7 +14,8 @@
   "dependencies": {
 		"jsdom": "*",
 		"request": "*",
-		"coffee-script": "*"
+		"coffee-script": "*",
+		"underscore": "*"
 	},
   "devDependencies": {
 		"expresso": "*"

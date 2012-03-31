@@ -9,6 +9,7 @@ http = require 'http'
 jsdom = require 'jsdom'
 fs = require 'fs'
 request = require 'request'
+_ = require 'underscore'
 
 jQuerySrc = fs.readFileSync("#{__dirname}/../vendor/jquery-1.6.4.js").toString()
 
@@ -92,10 +93,10 @@ class Type
 # owning both the 'Type.scopeKeyword' and 'Type.typeKeyword' keywords. By
 # default those are set to '_scope' and '_type' - but can be changed. 
 Type.isRawType = (obj) ->
-	obj and 
-	typeof obj is 'object' and 
-	Type.scopeKeyword of obj and 
-	Type.typeKeyword of obj		
+	obj and
+	typeof obj is 'object' and
+	Type.scopeKeyword of obj and
+	Type.typeKeyword of obj
 	
 # Flattens a structure so that all raw types are identified and converted
 # to 'Type' objects. Expects to start from a structure, not a raw type. However,
@@ -103,7 +104,7 @@ Type.isRawType = (obj) ->
 # instead. Does not recurse explicitly, but since the constructor of Type calls
 # this, it will recurse. 
 Type.flatten = (structure) ->
-	makeFlat = (value) -> 
+	makeFlat = (value) ->
 		return Type.read value if Type.isRawType value
 		value
 	
@@ -123,8 +124,12 @@ Type.scopeKeyword = '_scope'
 # to a jQuery-extended element
 class TypeRequest
 	constructor: (@type, @page, @callback) ->
-		@type = new Type @type if not (@type instanceof Type)
-		@page = new Page @page if not (@page instanceof Page)
+		# Check if we're actually using the 2 arg model with an options obj
+		if typeof @page is 'function'
+			_.extend @, @type
+		else
+			@type = new Type @type if not (@type instanceof Type)
+			@page = new Page @page if not (@page instanceof Page)
 
 		@page.makeRequest (err, window) =>
 			@callback err, null if err?
@@ -141,10 +146,21 @@ class TypeRequest
 		results.push @traverse type.structure, @context.$ node for node in nodes
 		results
 
+	postProcess: (selector, element, value) ->
+		return value if not @postprocessor
+
+		if @postprocFilter
+			return value if not @postprocFilter selector, element, value
+
+		@postprocessor selector, element, value
+
 	parseNode: (selector, element) ->
 		# If !selector, return all text content of the current element
-		return element.text().trim() if not selector
-		element.find(selector).first().text().trim()
+		if not selector
+			value = element.text().trim()
+		else
+			value = element.find(selector).first().text().trim()
+		@postProcess selector, element, value
 
 	# Recursive - takes a section of a type, decides what to do with it. If it is
 	# a type itself, this will move on to readType which sets context. 
