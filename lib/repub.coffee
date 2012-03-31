@@ -127,9 +127,9 @@ class TypeRequest
 		# Check if we're actually using the 2 arg model with an options obj
 		if typeof @page is 'function'
 			_.extend @, @type
-		else
-			@type = new Type @type if not (@type instanceof Type)
-			@page = new Page @page if not (@page instanceof Page)
+
+		@type = new Type @type if not (@type instanceof Type)
+		@page = new Page @page if not (@page instanceof Page)
 
 		@page.makeRequest (err, window) =>
 			@callback err, null if err?
