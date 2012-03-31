@@ -138,47 +138,43 @@ class TypeRequest
 			result = @traverse @type, @context.$ @context.document
 			@callback null, result
 	
-	readType: (type, element) ->
+	readType: (type, element, ckey) ->
 		nodes = element.find type.scope
-
 		return [] if not nodes? or nodes.length is 0
+		(@traverse type.structure, @context.$(node), ckey for node in nodes)
 
-		results = []
-		results.push @traverse type.structure, @context.$ node for node in nodes
-		results
-
-	postProcess: (selector, element, value) ->
+	postProcess: (selector, element, key, value) ->
 		return value if not @postprocessor
 
 		if @postprocFilter
-			return value if not @postprocFilter selector, element, value
+			return value if not @postprocFilter selector, element, key, value
 
-		@postprocessor selector, element, value
+		@postprocessor selector, element, key, value
 
-	parseNode: (selector, element) ->
+	parseNode: (selector, element, key) ->
 		# If !selector, return all text content of the current element
 		if not selector
 			value = element.text().trim()
 		else
 			value = element.find(selector).first().text().trim()
-		@postProcess selector, element, value
+		@postProcess selector, element, key, value
 
 	# Recursive - takes a section of a type, decides what to do with it. If it is
 	# a type itself, this will move on to readType which sets context. 
-	traverse: (type, element) ->
+	traverse: (type, element, ckey) ->
 	
 		# Check if this is a type - if so, we switch to that context and it will
 		# continue the recursion by itself.
-		return @readType type, element if type instanceof Type
+		return @readType type, element, ckey if type instanceof Type
 
 		# If this is a string then we've hit an endpoint and it's time to actually
 		# fetch data from the doc. (Null is also valid).
-		return @parseNode type, element if typeof type is 'string' or not type?
+		return @parseNode type, element, ckey if typeof type is 'string' or not type?
 
 		# Otherwise, we've got an object to iterate through.
 		out = {}
 		for key, value of type
-			out[key] = @traverse value, element
+			out[key] = @traverse value, element, key
 		out
 
 
