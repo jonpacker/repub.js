@@ -126,6 +126,7 @@ class TypeRequest
 	constructor: (@type, @page, @callback) ->
 		# Check if we're actually using the 2 arg model with an options obj
 		if typeof @page is 'function'
+			@callback = @page
 			_.extend @, @type
 
 		@type = new Type @type if not (@type instanceof Type)
